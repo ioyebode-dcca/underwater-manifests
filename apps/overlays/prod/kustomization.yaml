@@ -1,0 +1,44 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: underwater
+resources:
+  - ../../base/underwater
+
+# Prod-specific patches
+patches:
+  # Full replicas in prod
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: ecr-app-underwater
+
+  # Override image tag filter to only pull release-* images
+  # Prod NEVER pulls dev-* images
+  - patch: |-
+      - op: replace
+        path: /spec/filterTags/pattern
+        value: "^release-[0-9]+"
+    target:
+      kind: ImagePolicy
+      name: underwater
+
+  # Full resource limits in prod
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+    target:
+      kind: Deployment
+      name: ecr-app-underwater
+
+commonLabels:
+  environment: prod
