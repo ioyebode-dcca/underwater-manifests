@@ -3,5 +3,5 @@ kind: Namespace
 metadata:
   name: underwater
   labels:
+    environment: dev
     name: underwater
-    environment: base
