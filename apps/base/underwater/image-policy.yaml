@@ -4,7 +4,7 @@ metadata:
   name: underwater
   namespace: flux-system
 spec:
-  image: 861276101474.dkr.ecr.us-east-1.amazonaws.com/underwater
+  image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/underwater
   interval: 1m
   # Uses Flux IRSA to authenticate with ECR — no secrets needed
 ---
