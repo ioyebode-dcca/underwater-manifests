@@ -6,7 +6,7 @@ metadata:
   labels:
     app: octopus-underwater-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: octopus-underwater-app
@@ -21,25 +21,14 @@ spec:
         app: octopus-underwater-app
     spec:
       serviceAccountName: underwater-app
-
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app: octopus-underwater-app
-
       containers:
         - name: octopus-underwater-app
-          # Jenkins updates this tag via sed on every build
-          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/underwater:dev-15
+          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/underwater:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
               protocol: TCP
               name: http
-
           resources:
             requests:
               cpu: "100m"
@@ -47,7 +36,6 @@ spec:
             limits:
               cpu: "500m"
               memory: "256Mi"
-
           readinessProbe:
             httpGet:
               path: /
@@ -55,7 +43,6 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
           livenessProbe:
             httpGet:
               path: /
@@ -63,11 +50,3 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 30
             failureThreshold: 3
-
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - NET_BIND_SERVICE
