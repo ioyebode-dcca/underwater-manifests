@@ -33,7 +33,7 @@ spec:
       containers:
         - name: octopus-underwater-app
           # Jenkins updates this tag via sed on every build
-          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/underwater:latest
+          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/underwater:dev-14
           imagePullPolicy: Always
           ports:
             - containerPort: 80
