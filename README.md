@@ -55,7 +55,10 @@ underwater-manifests/
     ├── ingress-nginx/
     │   └── kustomization.yaml       # IMPORTANT: must exist even if empty
     └── monitoring/
-        └── kustomization.yaml       # IMPORTANT: must exist even if empty
+        ├── namespace.yaml           # monitoring namespace
+        ├── helmrepository.yaml      # prometheus-community Helm repo
+        ├── helmrelease.yaml         # kube-prometheus-stack HelmRelease
+        └── kustomization.yaml       # lists all monitoring resources
 ```
 
 ---
@@ -311,6 +314,128 @@ resources: []
 
 ---
 
+## Monitoring Stack (Prometheus + Grafana)
+
+The monitoring stack is deployed automatically by Flux via a HelmRelease. No manual Helm commands needed.
+
+### What Gets Deployed
+
+```
+monitoring namespace:
+  ✅ Prometheus          → scrapes metrics from all pods and nodes
+  ✅ Grafana             → visual dashboards for cluster metrics
+  ✅ Alertmanager        → handles alert routing and notifications
+  ✅ kube-state-metrics  → exposes Kubernetes object metrics
+  ✅ node-exporter       → exposes node CPU/memory/disk metrics (one per node)
+```
+
+### How It Works
+
+```
+Flux watches infrastructure/monitoring/
+         ↓
+Flux installs kube-prometheus-stack via Helm
+         ↓
+Prometheus scrapes metrics from all pods every 15s
+         ↓
+Grafana reads from Prometheus and displays dashboards
+         ↓
+Pre-built Kubernetes dashboards available immediately
+```
+
+### Access Grafana
+
+```bash
+kubectl port-forward svc/prometheus-grafana 3001:80 -n monitoring
+# Open browser: http://localhost:3001
+# Username: admin
+# Password: admin
+```
+
+Pre-built dashboards available under Dashboards → Browse:
+```
+Kubernetes / Compute Resources / Cluster     ← full cluster overview
+Kubernetes / Compute Resources / Namespace   ← per namespace (select: underwater)
+Kubernetes / Compute Resources / Pod         ← per pod CPU/memory
+Kubernetes / Nodes                           ← node disk/network/CPU
+```
+
+### Access Prometheus
+
+```bash
+kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9091:9090 -n monitoring
+# Open browser: http://localhost:9091
+```
+
+Useful PromQL queries:
+```promql
+# Pod CPU usage in underwater namespace
+rate(container_cpu_usage_seconds_total{namespace="underwater"}[5m])
+
+# Pod memory usage
+container_memory_usage_bytes{namespace="underwater"}
+
+# Pod restart count
+kube_pod_container_status_restarts_total{namespace="underwater"}
+
+# Node CPU usage
+1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (node)
+```
+
+### Verify Monitoring Stack
+
+```bash
+# Check all pods are running
+kubectl get pods -n monitoring
+
+# Check HelmRelease status
+kubectl get helmrelease -n monitoring
+
+# Check PVCs are bound (Prometheus persistent storage)
+kubectl get pvc -n monitoring
+```
+
+Expected output:
+```
+NAME                                           READY   STATUS
+alertmanager-prometheus-xxx                    2/2     Running
+prometheus-grafana-xxx                         3/3     Running
+prometheus-kube-prometheus-operator-xxx        1/1     Running
+prometheus-kube-state-metrics-xxx              1/1     Running
+prometheus-prometheus-xxx                      2/2     Running
+prometheus-node-exporter-xxx (x2 nodes)        1/1     Running
+```
+
+### Important Notes
+
+```
+Grafana persistence is disabled  → dashboards reset on pod restart
+                                    dashboards are defined as code in helmrelease.yaml
+                                    custom dashboards should be added as ConfigMaps
+
+Prometheus persistence is enabled → 7 days of metrics retained on EBS volume
+                                     PVC: 10Gi gp2 EBS volume
+
+Node exporter runs on every node  → automatically scales when nodes are added
+```
+
+### Two Grafana Instances
+
+```
+Local Docker (docker compose up):
+  → http://localhost:3000
+  → monitors Jenkins builds and SonarQube
+  → starts/stops with docker compose
+
+EKS Cluster (deployed by Flux):
+  → kubectl port-forward svc/prometheus-grafana 3001:80 -n monitoring
+  → http://localhost:3001
+  → monitors Kubernetes pods, nodes, deployments
+  → always running while EKS cluster is up
+```
+
+---
+
 ## Flux Sync Commands
 
 ```bash
@@ -403,6 +528,38 @@ Fix: git pull origin main --rebase
 Kustomize controller is stuck applying resources.
 Fix: kubectl describe kustomization flux-system -n flux-system
      kubectl logs -n flux-system deployment/kustomize-controller --tail=30
+```
+
+**Monitoring pods Pending: PVC unbound**
+```
+EBS CSI driver not installed or node IAM role missing EBS permissions.
+Fix:
+  1. Ensure aws-ebs-csi-driver addon is in Terraform (environments/dev/eks.tf)
+  2. Ensure AmazonEBSCSIDriverPolicy is attached to node role (modules/eks-cluster/node_group.tf)
+  3. Set gp2 as default storage class:
+     kubectl patch storageclass gp2 \
+       -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+  4. Delete stuck PVCs so they recreate:
+     kubectl delete pvc -n monitoring --all
+     kubectl delete pod -n monitoring <pending-pod-name>
+```
+
+**HelmRelease: no matches for kind**
+```
+Flux API versions changed in newer releases.
+Fix: use these correct API versions:
+  HelmRelease:    helm.toolkit.fluxcd.io/v2
+  HelmRepository: source.toolkit.fluxcd.io/v1
+```
+
+**Monitoring PVC provisioning: 403 UnauthorizedOperation**
+```
+Node IAM role missing ec2:CreateVolume permission.
+Fix: attach AmazonEBSCSIDriverPolicy to node role:
+  aws iam attach-role-policy \
+    --role-name <node-role> \
+    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+  Then delete stuck PVCs to retry provisioning.
 ```
 
 **kubectl: server has asked for credentials**
