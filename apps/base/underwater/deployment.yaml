@@ -23,7 +23,7 @@ spec:
       serviceAccountName: underwater-app
       containers:
         - name: octopus-underwater-app
-          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/underwater:dev-24
+          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/underwater:dev-25
           imagePullPolicy: Always
           ports:
             - containerPort: 80
