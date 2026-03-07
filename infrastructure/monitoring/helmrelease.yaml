@@ -18,14 +18,14 @@ spec:
     grafana:
       adminPassword: admin
       persistence:
-        enabled: true
-        size: 5Gi
+        enabled: false
     prometheus:
       prometheusSpec:
         retention: 7d
         storageSpec:
           volumeClaimTemplate:
             spec:
+              storageClassName: gp2
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:
