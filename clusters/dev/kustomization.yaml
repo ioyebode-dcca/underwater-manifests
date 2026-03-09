@@ -4,3 +4,9 @@ resources:
   - flux-system
   - ../../apps/overlays/dev
   - ../../infrastructure
+patches:
+  - path: flux-patches.yaml
+    target:
+      kind: ServiceAccount
+      name: image-reflector-controller
+      namespace: flux-system
