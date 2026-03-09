@@ -23,7 +23,7 @@ spec:
       serviceAccountName: auth-service
       containers:
         - name: auth-service
-          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/auth-service:dev-31
+          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/auth-service:dev-33
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
