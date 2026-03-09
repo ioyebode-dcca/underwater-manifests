@@ -23,7 +23,7 @@ spec:
       serviceAccountName: api-service
       containers:
         - name: api-service
-          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/api-service:dev-32
+          image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/api-service:dev-35
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
