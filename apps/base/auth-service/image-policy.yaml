@@ -1,10 +1,10 @@
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageRepository
 metadata:
-  name: auth-service
+  name: underwater
   namespace: flux-system
 spec:
-  image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/auth-service
+  image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/underwater
   interval: 1m
   provider: aws
 ---
@@ -15,10 +15,10 @@ metadata:
   namespace: flux-system
 spec:
   imageRepositoryRef:
-    name: auth-service
+    name: underwater
   filterTags:
-    pattern: "^dev-[0-9]+"
-    extract: "$timestamp"
+    pattern: "^dev-([0-9]+)$"
+    extract: "$1"
   policy:
     numerical:
       order: asc
