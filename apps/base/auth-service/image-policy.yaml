@@ -1,25 +1,22 @@
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageRepository
 metadata:
-  name: underwater
+  name: auth-service
   namespace: flux-system
 spec:
-  image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/underwater
+  image: 495905914919.dkr.ecr.us-east-1.amazonaws.com/auth-service
   interval: 1m
   provider: aws
-  # Uses Flux IRSA to authenticate with ECR — no secrets needed
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy
 metadata:
-  name: underwater
+  name: auth-service
   namespace: flux-system
 spec:
   imageRepositoryRef:
-    name: underwater
+    name: auth-service
   filterTags:
-    # dev cluster only pulls dev-* tags, prod only pulls release-* tags
-    # This is overridden per overlay — see overlays/dev and overlays/prod
     pattern: "^dev-[0-9]+"
     extract: "$timestamp"
   policy:
