@@ -4,10 +4,8 @@ resources:
   - ../../base/underwater
   - ../../base/auth-service
   - ../../base/api-service
-
-# Dev-specific patches
+  - ../../base/postgres
 patches:
-  # Scale down replicas in dev to save cost
   - patch: |-
       - op: replace
         path: /spec/replicas
@@ -15,8 +13,6 @@ patches:
     target:
       kind: Deployment
       name: ecr-app-underwater
-
-  # Override image tag filter to only pull dev-* images
   - patch: |-
       - op: replace
         path: /spec/filterTags/pattern
@@ -24,8 +20,6 @@ patches:
     target:
       kind: ImagePolicy
       name: underwater
-
-  # Smaller resource limits in dev
   - patch: |-
       - op: replace
         path: /spec/template/spec/containers/0/resources
@@ -39,6 +33,5 @@ patches:
     target:
       kind: Deployment
       name: ecr-app-underwater
-
 commonLabels:
   environment: dev
