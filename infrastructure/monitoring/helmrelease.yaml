@@ -19,9 +19,25 @@ spec:
       adminPassword: admin
       persistence:
         enabled: false
+      grafana.ini:
+        server:
+          root_url: "%(protocol)s://%(domain)s/grafana"
+          serve_from_sub_path: true
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          nginx.ingress.kubernetes.io/rewrite-target: /$2
+        path: /grafana(/|$)(.*)
+        pathType: ImplementationSpecific
+        hosts:
+          - ""
+
     prometheus:
       prometheusSpec:
         retention: 7d
+        routePrefix: /prometheus
+        externalUrl: http://placeholder/prometheus
         storageSpec:
           volumeClaimTemplate:
             spec:
@@ -30,5 +46,16 @@ spec:
               resources:
                 requests:
                   storage: 10Gi
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          nginx.ingress.kubernetes.io/rewrite-target: /$2
+        paths:
+          - /prometheus(/|$)(.*)
+        pathType: ImplementationSpecific
+        hosts:
+          - ""
+
     alertmanager:
       enabled: true
